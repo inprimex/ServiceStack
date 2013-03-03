@@ -153,7 +153,7 @@ namespace ServiceStack.WebHost.Endpoints.Support.Markdown
 
 				if (typeName == null) return null;
 
-				if (type.IsGenericType()
+				if (type.HasGenericType()
 					//TODO: support GenericTypeDefinition properly
 					&& !type.IsGenericTypeDefinition
 				)
@@ -341,7 +341,7 @@ namespace CSharpEval
 			{
 				assemblies.Add(assembly);
 
-				if (Common.ReflectionExtensions.IsDynamic(assembly)) continue;
+                if (assembly.IsDynamic()) continue;
 				AddAssembly(cp, assembly.Location);
 			}
 		}

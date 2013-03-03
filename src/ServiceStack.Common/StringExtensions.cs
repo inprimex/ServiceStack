@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Reflection;
 using ServiceStack.Common.Utils;
 using ServiceStack.Text;
 using ServiceStack.Text.Common;
@@ -35,10 +36,19 @@ namespace ServiceStack.Common
             return RegexSplitCamelCase.Replace(value, " $1").TrimStart();
         }
 
+        public static string ToInvariantUpper(this char value)
+        {
+#if NETFX_CORE
+            return value.ToString().ToUpperInvariant();
+#else
+            return value.ToString(CultureInfo.InvariantCulture).ToUpper();
+#endif
+        }
+
         public static string ToEnglish(this string camelCase)
         {
             var ucWords = camelCase.SplitCamelCase().ToLower();
-            return ucWords[0].ToString(CultureInfo.InvariantCulture).ToUpper() + ucWords.Substring(1);
+            return ucWords[0].ToInvariantUpper() + ucWords.Substring(1);
         }
 
         public static bool IsEmpty(this string value)
@@ -160,7 +170,7 @@ namespace ServiceStack.Common
 
         public static bool IsUserType(this Type type)
         {
-            return type.IsClass
+            return type.IsClass()
                 && type.Namespace != null
                 && !type.Namespace.StartsWith("System")
                 && type.Name.IndexOfAny(SystemTypeChars) == -1;

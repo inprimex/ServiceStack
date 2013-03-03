@@ -33,7 +33,7 @@ namespace ServiceStack.ServiceModel.Serialization
 
         private readonly Type type;
         private readonly Dictionary<string, PropertySerializerEntry> propertySetterMap
-            = new Dictionary<string, PropertySerializerEntry>(StringComparer.InvariantCultureIgnoreCase);
+            = new Dictionary<string, PropertySerializerEntry>(Text.StringExtensions.InvariantComparerIgnoreCase());
 
         public StringMapTypeDeserializer(Type type)
         {

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using ServiceStack.Common.Reflection;
 using ServiceStack.DesignPatterns.Model;
+using ServiceStack.Text;
 
 namespace ServiceStack.Common.Utils
 {
@@ -26,17 +27,17 @@ namespace ServiceStack.Common.Utils
             }
 #endif
 
-            if (typeof(T).IsClass)
+            if (typeof(T).IsClass())
             {
-                if (typeof(T).GetProperty(IdUtils.IdField) != null
-                    && typeof(T).GetProperty(IdUtils.IdField).GetGetMethod() != null)
+                if (typeof(T).GetPropertyInfo(IdUtils.IdField) != null
+                    && typeof(T).GetPropertyInfo(IdUtils.IdField).GetMethodInfo() != null)
                 {
                     CanGetId = HasPropertyId<T>.GetId;
                     return;
                 }
-                
-                foreach (var pi in typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                    .Where(pi => pi.GetCustomAttributes(true)
+
+                foreach (var pi in typeof(T).GetPublicProperties()
+                    .Where(pi => pi.CustomAttributes()
                              .Cast<Attribute>()
                              .Any(attr => attr.GetType().Name == "PrimaryKeyAttribute")))
                 {
@@ -60,7 +61,7 @@ namespace ServiceStack.Common.Utils
 
         static HasPropertyId()
         {
-            var pi = typeof(TEntity).GetProperty(IdUtils.IdField);
+            var pi = typeof(TEntity).GetPropertyInfo(IdUtils.IdField);
             GetIdFn = StaticAccessors<TEntity>.ValueUnTypedGetPropertyTypeFn(pi);
         }
 
@@ -123,7 +124,7 @@ namespace ServiceStack.Common.Utils
 
         public static object GetObjectId(this object entity)
         {
-            return entity.GetType().GetProperty(IdField).GetGetMethod().Invoke(entity, new object[0]);
+            return entity.GetType().GetPropertyInfo(IdField).GetMethodInfo().Invoke(entity, new object[0]);
         }
 
         public static object GetId<T>(this T entity)
@@ -159,7 +160,7 @@ namespace ServiceStack.Common.Utils
             var dir1 = idValue.Substring(0, 2);
             var dir2 = idValue.Substring(2, 2);
 
-            var path = string.Format("{1}{0}{2}{0}{3}{0}{4}", Path.DirectorySeparatorChar,
+            var path = string.Format("{1}{0}{2}{0}{3}{0}{4}", Text.StringExtensions.DirSeparatorChar,
                 rootDir, dir1, dir2, idValue);
 
             return path;

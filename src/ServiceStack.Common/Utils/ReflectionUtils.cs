@@ -1,5 +1,8 @@
 using System;
 using System.Collections.Generic;
+#if NETFX_CORE
+using System.Collections.Concurrent;
+#endif
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
@@ -33,7 +36,7 @@ namespace ServiceStack.Common.Utils
             }
 
             var type = obj.GetType();
-            if (type.IsArray || type.IsValueType || type.IsGenericType)
+            if (type.IsArray() || type.IsValueType() || type.IsGeneric())
             {
                 var value = CreateDefaultValue(type, new Dictionary<Type, int>(20));
                 return value;
@@ -54,7 +57,7 @@ namespace ServiceStack.Common.Utils
             if (obj is string) return obj; // prevents it from dropping into the char[] Chars property.  Sheesh
             var type = obj.GetType();
 
-            var members = type.GetMembers(BindingFlags.Public | BindingFlags.Instance);
+            var members = type.GetPublicMembers();
             foreach (var info in members)
             {
                 var fieldInfo = info as FieldInfo;
@@ -74,7 +77,7 @@ namespace ServiceStack.Common.Utils
 
         public static object GetDefaultValue(Type type)
         {
-            if (!type.IsValueType) return null;
+            if (!type.IsValueType()) return null;
 
             object defaultValue;
             lock (DefaultValueTypes)
@@ -123,8 +126,7 @@ namespace ServiceStack.Common.Utils
         {
             var map = new Dictionary<string, AssignmentMember>();
 
-            var members = type.GetMembers(
-                BindingFlags.Public | BindingFlags.Instance | BindingFlags.FlattenHierarchy);
+            var members = type.GetAllPublicMembers();
             foreach (var info in members)
             {
                 if (info.DeclaringType == typeof(object)) continue;
@@ -232,7 +234,8 @@ namespace ServiceStack.Common.Utils
                 Log.WarnFormat("Attempted to set read only property '{0}'", propertyInfo.Name);
                 return;
             }
-            var propertySetMetodInfo = propertyInfo.GetSetMethod();
+
+            var propertySetMetodInfo = propertyInfo.SetMethod();
             if (propertySetMetodInfo != null)
             {
                 propertySetMetodInfo.Invoke(obj, new[] { value });
@@ -244,7 +247,7 @@ namespace ServiceStack.Common.Utils
             if (propertyInfo == null || !propertyInfo.CanRead)
                 return null;
 
-            var getMethod = propertyInfo.GetGetMethod();
+            var getMethod = propertyInfo.GetMethodInfo();
             return getMethod != null ? getMethod.Invoke(obj, new object[0]) : null;
         }
 
@@ -271,6 +274,19 @@ namespace ServiceStack.Common.Utils
 
         public static bool IsUnsettableValue(FieldInfo fieldInfo, PropertyInfo propertyInfo)
         {
+#if NETFX_CORE
+            if (propertyInfo != null)
+            {
+                // Properties on non-user defined classes should not be set
+                // Currently we define those properties as properties declared on
+                // types defined in mscorlib
+
+                if (propertyInfo.DeclaringType.AssemblyQualifiedName.Equals(typeof(object).AssemblyQualifiedName))
+                {
+                    return true;
+                }
+            }
+#else
             if (propertyInfo != null && propertyInfo.ReflectedType != null)
             {
                 // Properties on non-user defined classes should not be set
@@ -282,6 +298,7 @@ namespace ServiceStack.Common.Utils
                     return true;
                 }
             }
+#endif
 
             return false;
         }
@@ -305,7 +322,7 @@ namespace ServiceStack.Common.Utils
                 return type.Name;
             }
 
-            if (type.IsEnum)
+            if (type.IsEnum())
             {
 #if SILVERLIGHT4 || WINDOWS_PHONE
                 return Enum.ToObject(type, 0);
@@ -324,14 +341,14 @@ namespace ServiceStack.Common.Utils
             {
 
                 //when using KeyValuePair<TKey, TValue>, TKey must be non-default to stuff in a Dictionary
-                if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(KeyValuePair<,>))
+                if (type.IsGeneric() && type.GenericTypeDefinition() == typeof(KeyValuePair<,>))
                 {
-                    var genericTypes = type.GetGenericArguments();
+                    var genericTypes = type.GenericTypeArguments();
                     var valueType = Activator.CreateInstance(type, CreateDefaultValue(genericTypes[0], recursionInfo), CreateDefaultValue(genericTypes[1], recursionInfo));
                     return PopulateObjectInternal(valueType, recursionInfo);
                 }
 
-                if (type.IsValueType)
+                if (type.IsValueType())
                 {
                     return type.CreateInstance();
                 }
@@ -341,7 +358,7 @@ namespace ServiceStack.Common.Utils
                     return PopulateArray(type, recursionInfo);
                 }
 
-                var constructorInfo = type.GetConstructor(Type.EmptyTypes);
+                var constructorInfo = type.GetEmptyConstructor();
                 var hasEmptyConstructor = constructorInfo != null;
 
                 if (hasEmptyConstructor)
@@ -370,7 +387,11 @@ namespace ServiceStack.Common.Utils
 
         private static Type GetGenericCollectionType(Type type)
         {
-#if WINDOWS_PHONE
+#if NETFX_CORE
+            var genericCollectionType =
+                type.GetTypeInfo().ImplementedInterfaces
+                    .FirstOrDefault(t => t.GetTypeInfo().IsGenericType && t.GetGenericTypeDefinition() == typeof (ICollection<>));
+#elif WINDOWS_PHONE
             var genericCollectionType =
                 type.GetInterfaces()
                     .FirstOrDefault(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof (ICollection<>));
@@ -385,8 +406,7 @@ namespace ServiceStack.Common.Utils
 
         public static void SetGenericCollection(Type realisedListType, object genericObj, Dictionary<Type, int> recursionInfo)
         {
-            var args = realisedListType.GetGenericArguments();
-
+            var args = realisedListType.GenericTypeArguments();
             if (args.Length != 1)
             {
                 Log.ErrorFormat("Found a generic list that does not take one generic argument: {0}", realisedListType);
@@ -394,8 +414,7 @@ namespace ServiceStack.Common.Utils
                 return;
             }
 
-            var methodInfo = realisedListType.GetMethod("Add");
-
+            var methodInfo = realisedListType.GetMethodInfo("Add");
             if (methodInfo != null)
             {
                 var argValues = CreateDefaultValues(args, recursionInfo);
@@ -417,9 +436,9 @@ namespace ServiceStack.Common.Utils
         //TODO: replace with InAssignableFrom
         public static bool CanCast(Type toType, Type fromType)
         {
-            if (toType.IsInterface)
+            if (toType.IsInterface())
             {
-                var interfaceList = fromType.GetInterfaces().ToList();
+                var interfaceList = fromType.Interfaces().ToList();
                 if (interfaceList.Contains(toType)) return true;
             }
             else
@@ -430,7 +449,7 @@ namespace ServiceStack.Common.Utils
                 {
                     areSameTypes = baseType == toType;
                 }
-                while (!areSameTypes && (baseType = fromType.BaseType) != null);
+                while (!areSameTypes && (baseType = fromType.BaseType()) != null);
 
                 if (areSameTypes) return true;
             }
@@ -444,7 +463,7 @@ namespace ServiceStack.Common.Utils
             var baseType = fromType;
             do
             {
-                var propertyInfos = baseType.GetProperties(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+                var propertyInfos = baseType.AllProperties();
                 foreach (var propertyInfo in propertyInfos)
                 {
                     var attributes = propertyInfo.GetCustomAttributes(attributeType, true);
@@ -454,7 +473,7 @@ namespace ServiceStack.Common.Utils
                     }
                 }
             }
-            while ((baseType = baseType.BaseType) != null);
+            while ((baseType = baseType.BaseType()) != null);
         }
     }
 }

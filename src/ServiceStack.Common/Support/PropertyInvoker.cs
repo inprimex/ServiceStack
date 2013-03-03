@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq.Expressions;
 using System.Reflection;
+using ServiceStack.Text;
 
 namespace ServiceStack.Common.Support
 {
@@ -11,7 +12,7 @@ namespace ServiceStack.Common.Support
     {
         public static PropertySetterDelegate GetPropertySetterFn(this PropertyInfo propertyInfo)
         {
-            var propertySetMethod = propertyInfo.GetSetMethod();
+            var propertySetMethod = propertyInfo.SetMethod();
             if (propertySetMethod == null) return null;
 
 #if MONOTOUCH || SILVERLIGHT || XBOX
@@ -35,11 +36,15 @@ namespace ServiceStack.Common.Support
 
         public static PropertyGetterDelegate GetPropertyGetterFn(this PropertyInfo propertyInfo)
         {
-            var getMethodInfo = propertyInfo.GetGetMethod();
+            var getMethodInfo = propertyInfo.GetMethodInfo();
             if (getMethodInfo == null) return null;
 
 #if MONOTOUCH || SILVERLIGHT || XBOX
+#if NETFX_CORE
+            return o => propertyInfo.GetMethod.Invoke(o, new object[] { });
+#else
             return o => propertyInfo.GetGetMethod().Invoke(o, new object[] { });
+#endif
 #else
             try
             {

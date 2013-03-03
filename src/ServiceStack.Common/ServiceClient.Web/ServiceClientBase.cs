@@ -1,7 +1,10 @@
 using System;
+using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Globalization;
 using System.IO;
 using System.Net;
+using System.Linq;
 #if !(MONOTOUCH || SILVERLIGHT)
 using System.Text;
 using System.Web;
@@ -85,6 +88,15 @@ namespace ServiceStack.ServiceClient.Web
             }
         }
 
+        /// <summary>
+        /// Gets the collection of headers to be added to outgoing requests.
+        /// </summary>
+#if NETFX_CORE || WINDOWS_PHONE
+        public Dictionary<string, string> Headers { get; private set; } 
+#else
+        public NameValueCollection Headers { get; private set; } 
+#endif
+
         public const string DefaultHttpMethod = "POST";
 
         readonly AsyncServiceClient asyncClient;
@@ -105,6 +117,11 @@ namespace ServiceStack.ServiceClient.Web
                 LocalHttpWebResponseFilter = this.LocalHttpWebResponseFilter
             };
             this.StoreCookies = true; //leave
+#if NETFX_CORE || WINDOWS_PHONE
+            this.Headers = new Dictionary<string, string>();
+#else
+            this.Headers = new NameValueCollection();
+#endif
 
 #if SILVERLIGHT
             asyncClient.HandleCallbackOnUIThread = this.HandleCallbackOnUIThread = true;
@@ -274,8 +291,12 @@ namespace ServiceStack.ServiceClient.Web
         /// Determines if the basic auth header should be sent with every request.
         /// By default, the basic auth header is only sent when "401 Unauthorized" is returned.
         /// </summary>
-        public bool AlwaysSendBasicAuthHeader { get; set; }
-
+        private bool alwaysSendBasicAuthHeader;
+        public bool AlwaysSendBasicAuthHeader
+        {
+            get { return alwaysSendBasicAuthHeader; }
+            set { asyncClient.AlwaysSendBasicAuthHeader = alwaysSendBasicAuthHeader = value;}
+        }
 
         /// <summary>
         /// Specifies if cookies should be stored
@@ -569,6 +590,7 @@ namespace ServiceStack.ServiceClient.Web
             {
                 client.Accept = Accept;
                 client.Method = httpMethod;
+                client.Headers.Add(Headers);
 
                 if (Proxy != null) client.Proxy = Proxy;
                 if (this.Timeout.HasValue) client.Timeout = (int)this.Timeout.Value.TotalMilliseconds;
@@ -795,7 +817,7 @@ namespace ServiceStack.ServiceClient.Web
 
         public virtual void CustomMethodAsync<TResponse>(string httpVerb, IReturn<TResponse> request, Action<TResponse> onSuccess, Action<TResponse, Exception> onError)
         {
-            if (!HttpMethods.AllVerbs.Contains(httpVerb.ToUpper()))
+            if (!HttpMethods.HasVerb(httpVerb))
                 throw new NotSupportedException("Unknown HTTP Method is not supported: " + httpVerb);
 
             asyncClient.SendAsync(httpVerb, GetUrl(request.ToUrl(httpVerb, Format)), request, onSuccess, onError);

@@ -1,10 +1,11 @@
 ﻿using System.Reflection;
+using ServiceStack.Text;
 
 namespace ServiceStack.ServiceClient.Web
 {
 	internal abstract class RouteMember
 	{
-		public abstract object GetValue(object target);
+		public abstract object GetValue(object target, bool excludeDefault = false);
 	}
 
 	internal class FieldRouteMember : RouteMember
@@ -16,9 +17,11 @@ namespace ServiceStack.ServiceClient.Web
 			this.field = field;
 		}
 
-		public override object GetValue(object target)
+		public override object GetValue(object target, bool excludeDefault)
 		{
-			return field.GetValue(target);
+			var v = field.GetValue(target);
+			if (excludeDefault && Equals(v, field.FieldType.GetDefaultValue())) return null;
+			return v;
 		}
 	}
 
@@ -31,9 +34,11 @@ namespace ServiceStack.ServiceClient.Web
 			this.property = property;
 		}
 
-		public override object GetValue(object target)
+		public override object GetValue(object target, bool excludeDefault)
 		{
-			return property.GetValue(target, null);
+			var v = property.GetValue(target, null);
+			if (excludeDefault && Equals(v, property.PropertyType.GetDefaultValue())) return null;
+			return v;
 		}
 	}
 }

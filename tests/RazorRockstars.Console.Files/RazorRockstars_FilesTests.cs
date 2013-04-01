@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Net;
@@ -78,7 +79,7 @@ namespace RazorRockstars.Console.Files
         public void Assert200(string url, params string[] containsItems)
         {
             url.Print();
-            var text = url.GetStringFromUrl(AcceptContentType, r => {
+            var text = url.GetStringFromUrl(AcceptContentType, responseFilter:r => {
                 if (r.StatusCode != HttpStatusCode.OK)
                     Assert.Fail(url + " did not return 200 OK");
             });
@@ -94,7 +95,7 @@ namespace RazorRockstars.Console.Files
         public void Assert200UrlContentType(string url, string contentType)
         {
             url.Print();
-            url.GetStringFromUrl(AcceptContentType, r => {
+            url.GetStringFromUrl(AcceptContentType, responseFilter:r => {
                 if (r.StatusCode != HttpStatusCode.OK)
                     Assert.Fail(url + " did not return 200 OK: " + r.StatusCode);
                 if (!r.ContentType.StartsWith(contentType))
@@ -123,6 +124,7 @@ namespace RazorRockstars.Console.Files
         static string ViewRazorPartial = "<!--view:RazorPartial.cshtml-->";
         static string ViewMarkdownPartial = "<!--view:MarkdownPartial.md-->";
         static string ViewRazorPartialModel = "<!--view:RazorPartialModel.cshtml-->";
+        static string ViewPartialChildModel = "<!--view:PartialChildModel.cshtml-->";
 
         static string View_Default = "<!--view:default.cshtml-->";
         static string View_Pages_Default = "<!--view:Pages/default.cshtml-->";
@@ -135,6 +137,7 @@ namespace RazorRockstars.Console.Files
         static string Template_SimpleLayout = "<!--template:SimpleLayout.cshtml-->";
         static string Template_SimpleLayout2 = "<!--template:SimpleLayout2.cshtml-->";
         static string Template_HtmlReport = "<!--template:HtmlReport.cshtml-->";
+        static string Template_PartialModel = "<!--template:PartialModel.cshtml-->";
 
         static string TemplateM_Layout = "<!--template:_Layout.shtml-->";
         static string TemplateM_Pages_Layout = "<!--template:Pages/_Layout.shtml-->";
@@ -268,6 +271,26 @@ namespace RazorRockstars.Console.Files
             Assert200(Host + "/ilist1/List", ViewList, Template_HtmlReport);
             Assert200(Host + "/ilist2/List", ViewList, Template_HtmlReport);
             Assert200(Host + "/ilist3/List", ViewList, Template_HtmlReport);
+        }
+
+        [Test]
+        public void Can_get_PartialModel()
+        {
+            var containsItems = new List<string>
+                {
+                    Template_PartialModel,
+                    ViewPartialChildModel,
+                };
+
+            5.Times(x => containsItems.Add("<input id=\"SomeProperty\" name=\"SomeProperty\" type=\"text\" value=\"value " + x + "\" />"));
+
+            Assert200(Host + "/partialmodel", containsItems.ToArray());
+        }
+
+        [Test]
+        public void Can_get_RequestPathInfo_in_PartialChildModel()
+        {
+            Assert200(Host + "/partialmodel", Template_PartialModel, ViewPartialChildModel, "PathInfo: <b>/partialmodel</b>");
         }
 
     }

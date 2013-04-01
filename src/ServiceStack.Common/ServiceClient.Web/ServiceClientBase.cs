@@ -39,6 +39,8 @@ namespace ServiceStack.ServiceClient.Web
         private string replyPath = "/syncreply/";
         private string oneWayPath = "/asynconeway/";
 
+		private AuthenticationInfo authInfo = null;
+
         public bool UseNewPredefinedRoutes
         {
             set
@@ -94,7 +96,7 @@ namespace ServiceStack.ServiceClient.Web
 #if NETFX_CORE || WINDOWS_PHONE
         public Dictionary<string, string> Headers { get; private set; } 
 #else
-        public NameValueCollection Headers { get; private set; } 
+        public NameValueCollection Headers { get; private set; }
 #endif
 
         public const string DefaultHttpMethod = "POST";
@@ -105,8 +107,7 @@ namespace ServiceStack.ServiceClient.Web
         {
             this.HttpMethod = DefaultHttpMethod;
             this.CookieContainer = new CookieContainer();
-            asyncClient = new AsyncServiceClient
-            {
+            asyncClient = new AsyncServiceClient {
                 ContentType = ContentType,
                 StreamSerializer = SerializeToStream,
                 StreamDeserializer = StreamDeserializer,
@@ -233,6 +234,18 @@ namespace ServiceStack.ServiceClient.Web
                 this.asyncClient.Timeout = value;
             }
         }
+        
+        private TimeSpan? readWriteTimeout;
+    	public TimeSpan? ReadWriteTimeout
+		{
+			get { return this.readWriteTimeout; }
+			set
+			{
+				this.readWriteTimeout = value;
+                // TODO implement ReadWriteTimeout in asyncClient
+				//this.asyncClient.ReadWriteTimeout = value;
+			}
+		}
 
         public virtual string Accept
         {
@@ -295,7 +308,7 @@ namespace ServiceStack.ServiceClient.Web
         public bool AlwaysSendBasicAuthHeader
         {
             get { return alwaysSendBasicAuthHeader; }
-            set { asyncClient.AlwaysSendBasicAuthHeader = alwaysSendBasicAuthHeader = value;}
+            set { asyncClient.AlwaysSendBasicAuthHeader = alwaysSendBasicAuthHeader = value; }
         }
 
         /// <summary>
@@ -438,8 +451,21 @@ namespace ServiceStack.ServiceClient.Web
             {
                 if (WebRequestUtils.ShouldAuthenticate(ex, this.UserName, this.Password))
                 {
-                    var client = createWebRequest();
-                    client.AddBasicAuth(this.UserName, this.Password);
+					// adamfowleruk : Check response object to see what type of auth header to add
+					
+					var client = createWebRequest();
+
+					var webEx = ex as WebException;
+					if (webEx != null && webEx.Response != null) {
+						WebHeaderCollection headers = ((HttpWebResponse) webEx.Response).Headers;
+						var doAuthHeader = headers[ServiceStack.Common.Web.HttpHeaders.WwwAuthenticate];
+						// check value of WWW-Authenticate header
+						this.authInfo = new ServiceStack.ServiceClient.Web.AuthenticationInfo(doAuthHeader);
+
+						client.AddAuthInfo(this.UserName,this.Password,authInfo);
+					}
+
+
                     if (OnAuthenticationRequired != null)
                     {
                         OnAuthenticationRequired(client);
@@ -508,8 +534,7 @@ namespace ServiceStack.ServiceClient.Web
                 log.DebugFormat("Status Code : {0}", errorResponse.StatusCode);
                 log.DebugFormat("Status Description : {0}", errorResponse.StatusDescription);
 
-                var serviceEx = new WebServiceException(errorResponse.StatusDescription)
-                {
+                var serviceEx = new WebServiceException(errorResponse.StatusDescription) {
                     StatusCode = (int)errorResponse.StatusCode,
                     StatusDescription = errorResponse.StatusDescription,
                 };
@@ -533,8 +558,7 @@ namespace ServiceStack.ServiceClient.Web
                 catch (Exception innerEx)
                 {
                     // Oh, well, we tried
-                    throw new WebServiceException(errorResponse.StatusDescription, innerEx)
-                    {
+                    throw new WebServiceException(errorResponse.StatusDescription, innerEx) {
                         StatusCode = (int)errorResponse.StatusCode,
                         StatusDescription = errorResponse.StatusDescription,
                         ResponseBody = serviceEx.ResponseBody
@@ -559,8 +583,7 @@ namespace ServiceStack.ServiceClient.Web
 
         private WebRequest SendRequest(string httpMethod, string requestUri, object request)
         {
-            return PrepareWebRequest(httpMethod, requestUri, request, client =>
-                {
+            return PrepareWebRequest(httpMethod, requestUri, request, client => {
                     using (var requestStream = client.GetRequestStream())
                     {
                         SerializeToStream(null, request, requestStream);
@@ -594,8 +617,14 @@ namespace ServiceStack.ServiceClient.Web
 
                 if (Proxy != null) client.Proxy = Proxy;
                 if (this.Timeout.HasValue) client.Timeout = (int)this.Timeout.Value.TotalMilliseconds;
+                if (this.ReadWriteTimeout.HasValue) client.ReadWriteTimeout = (int)this.ReadWriteTimeout.Value.TotalMilliseconds;
                 if (this.credentials != null) client.Credentials = this.credentials;
-                if (this.AlwaysSendBasicAuthHeader) client.AddBasicAuth(this.UserName, this.Password);
+
+				if (null != this.authInfo) {	
+					client.AddAuthInfo(this.UserName,this.Password,authInfo);
+				} else {
+					if (this.AlwaysSendBasicAuthHeader) client.AddBasicAuth(this.UserName, this.Password);
+				}
 
                 if (!DisableAutoCompression)
                 {
@@ -969,8 +998,7 @@ namespace ServiceStack.ServiceClient.Web
             var requestUri = GetUrl(relativeOrAbsoluteUrl);
             var currentStreamPosition = fileToUpload.Position;
 
-            Func<WebRequest> createWebRequest = () =>
-            {
+            Func<WebRequest> createWebRequest = () => {
                 var webRequest = PrepareWebRequest(HttpMethods.Post, requestUri, null, null);
 
                 var queryString = QueryStringSerializer.SerializeToString(request);
@@ -1077,9 +1105,25 @@ namespace ServiceStack.ServiceClient.Web
             {
                 return (TResponse)Convert.ChangeType(webResponse, typeof(TResponse));
             }
+            if (typeof(TResponse) == typeof(Stream)) //Callee Needs to dispose manually
+            {
+                return (TResponse)(object)webResponse.GetResponseStream();
+            }
 
             using (var responseStream = webResponse.GetResponseStream())
             {
+                if (typeof(TResponse) == typeof(string))
+                {
+                    using (var reader = new StreamReader(responseStream))
+                    {
+                        return (TResponse)(object)reader.ReadToEnd();
+                    }
+                }
+                if (typeof(TResponse) == typeof(byte[]))
+                {
+                    return (TResponse)(object)responseStream.ReadFully();
+                }
+
                 var response = DeserializeFromStream<TResponse>(responseStream);
                 return response;
             }

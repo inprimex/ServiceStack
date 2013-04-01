@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -155,7 +156,7 @@ namespace ServiceStack.ServiceHost
 
         public void RegisterRestPaths(Type requestType)
         {
-            var attrs = requestType.GetCustomAttributes(typeof(RouteAttribute), true);
+            var attrs = TypeDescriptor.GetAttributes(requestType).OfType<RouteAttribute>();
             foreach (RouteAttribute attr in attrs)
             {
                 var restPath = new RestPath(requestType, attr.Path, attr.Verbs, attr.Summary, attr.Notes);
@@ -167,8 +168,19 @@ namespace ServiceStack.ServiceHost
             }
         }
 
+        private static readonly char[] InvalidRouteChars = new[] {'?', '&'};
+
         public void RegisterRestPath(RestPath restPath)
         {
+            if (!EndpointHostConfig.SkipRouteValidation)
+            {
+                if (!restPath.Path.StartsWith("/"))
+                    throw new ArgumentException("Route '{0}' on '{1}' must start with a '/'".Fmt(restPath.Path, restPath.RequestType.Name));
+                if (restPath.Path.IndexOfAny(InvalidRouteChars) != -1)
+                    throw new ArgumentException("Route '{0}' on '{1}' contains invalid chars. " +
+                                                "See https://github.com/ServiceStack/ServiceStack/wiki/Routing for info on valid routes.".Fmt(restPath.Path, restPath.RequestType.Name));
+            }
+
             List<RestPath> pathsAtFirstMatch;
             if (!RestPathMap.TryGetValue(restPath.FirstMatchHashKey, out pathsAtFirstMatch))
             {

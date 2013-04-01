@@ -116,6 +116,7 @@
     <Compile Include="Configuration\AppSettings.cs" />
     <Compile Include="Configuration\AppSettingsBase.cs" />
     <Compile Include="Configuration\ConfigUtils.cs" />
+    <Compile Include="Configuration\DictionarySettings.cs" />
     <Compile Include="Configuration\ISettings.cs" />
     <Compile Include="HttpExtensions.cs" />
     <Compile Include="MetadataTypesHandler.cs" />
@@ -204,7 +205,7 @@
     <Compile Include="WebHost.Endpoints\ActionContext.cs" />
     <Compile Include="WebHost.Endpoints\AppHostExtensions.cs" />
     <Compile Include="Markdown\CachedExpressionCompiler.cs" />
-    <Compile Include="Markdown\DynamicTypeGenerator .cs" />
+    <Compile Include="Markdown\DynamicTypeGenerator.cs" />
     <Compile Include="Markdown\ExpressionHelper.cs" />
     <Compile Include="Html\HtmlHelper.cs" />
     <Compile Include="Html\DisplayTextExtensions.cs" />
@@ -224,7 +225,6 @@
     <Compile Include="Html\ViewDataInfo.cs" />
     <Compile Include="Properties\Resources.Designer.cs" />
     <Compile Include="Html\ITemplatePage.cs" />
-    <Compile Include="Funq\AutoWireHelpers.cs" />
     <Compile Include="ServiceHost\FileExtensions.cs" />
     <Compile Include="ServiceHost\HttpFile.cs" />
     <Compile Include="ServiceHost\HttpRequestAuthentication.cs" />

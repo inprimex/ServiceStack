@@ -80,7 +80,7 @@ public class TodosService : Service
 //no code-gen required, can re-use above DTO's
 
 var restClient = new JsonServiceClient(BaseUri);
-List<Todo> all = restClient.Get(new Todos()); 			// Count = 0
+List<Todo> all = restClient.Get(new Todos());     		// Count = 0
 
 var todo = restClient.Post(
     new Todo { Content = "New TODO", Order = 1 }); 	    // todo.Id = 1
@@ -147,17 +147,32 @@ If you just want ServiceStack hosted at `/` - Create an empty ASP.NET Web Applic
 Otherwise if you want to host ServiceStack Side-by-Side with MVC: Hosted at `/api` - Create an empty MVC Web Application and
 ![Install-Pacakage ServiceStack.Host.Mvc](http://www.servicestack.net/img/nuget-servicestack.host.mvc.png)
 
-To help get started you should also download the ServiceStack.Examples projects (includes dlls, demos and starter templates):
+To help get started you should also clone the ServiceStack.Examples projects (includes dlls, demos and starter templates):
 
-  * **[ServiceStack.Examples/downloads/](https://github.com/ServiceStack/ServiceStack.Examples/downloads)**
+    git clone git://github.com/ServiceStack/ServiceStack.Examples.git
 
-If you prefer not to use NuGet and just want to download the latest release binaries get them at:
-
-  * **[ServiceStack/downloads/](https://github.com/ServiceStack/ServiceStack/downloads)**
-
-Alternatively if you want keep up with the latest version you can always use the power of Git :)
+Alternatively if you want keep up with the latest version and not use NuGet, simply clone this repo:
 
     git clone git://github.com/ServiceStack/ServiceStack.git
+    
+## Download published NuGet binaries without NuGet
+
+GitHub has disabled its download feature so currently NuGet is the best way to get ServiceStack published releases.
+For environments that don't have NuGet installed (e.g. OSX/Linux) you can still download the published binaries by 
+extracting them from the published NuGet packages. The url to download a nuget package is: 
+
+    http://packages.nuget.org/api/v1/package/{PackageName}/{Version}
+    
+ So to get the core ServiceStack and ServiceStack.Text libs in OSX/Linux (or using gnu tools for Windows) you can just do:
+
+    wget -O ServiceStack http://packages.nuget.org/api/v1/package/ServiceStack/3.9.42
+    unzip ServiceStack 'lib/*'
+    
+    wget -O ServiceStack.Text http://packages.nuget.org/api/v1/package/ServiceStack.Text/3.9.42
+    unzip ServiceStack.Text 'lib/*'
+
+which will download and extract the dlls into your local local `lib/` folder.
+    
 
 [Release notes for major releases](https://github.com/ServiceStack/ServiceStack/wiki/Release-Notes)
 
@@ -298,12 +313,12 @@ http://www.jetbrains.com/profiler/
 A big thanks to GitHub and all of ServiceStack's contributors:
 
  - [bman654](https://github.com/bman654) (Brandon Wallace)
- - [Iristyle](https://github.com/Iristyle) (Ethan Brown)
+ - [iristyle](https://github.com/iristyle) (Ethan Brown)
  - [superlogical](https://github.com/superlogical) (Jake Scott)
  - [itamar82](https://github.com/itamar82)
  - [chadwackerman](https://github.com/chadwackerman)
  - [derfsplat](https://github.com/derfsplat)
- - [JohnACarruthers](https://github.com/JohnACarruthers) (John Carruthers)
+ - [johnacarruthers](https://github.com/johnacarruthers) (John Carruthers)
  - [mvitorino](https://github.com/mvitorino) (Miguel Vitorino)
  - [bsiegel](https://github.com/bsiegel) (Brandon Siegel)
  - [mdavid](https://github.com/mdavid) (M. David Peterson)
@@ -354,10 +369,10 @@ A big thanks to GitHub and all of ServiceStack's contributors:
  - [johnsheehan](https://github.com/johnsheehan) (John Sheehan)
  - [jschlicht](https://github.com/jschlicht) (Jared Schlicht)
  - [kumarnitin](https://github.com/kumarnitin) (Nitin Kumar)
- - [DavidChristiansen](https://github.com/DavidChristiansen) (David Christiansen)  
- - [PaulECoyote](https://github.com/PaulECoyote) (Paul Evans)
+ - [davidchristiansen](https://github.com/davidchristiansen) (David Christiansen)  
+ - [paulecoyote](https://github.com/paulecoyote) (Paul Evans)
  - [kongo2002](https://github.com/kongo2002) (Gregor Uhlenheuer)
- - [BrannonKing](https://github.com/BrannonKing) (Brannon King)
+ - [brannonking](https://github.com/brannonking) (Brannon King)
  - [alexandrerocco](https://github.com/alexandrerocco) (Alexandre Rocco)
  - [cbarbara](https://github.com/cbarbara)
  - [assaframan](https://github.com/assaframan) (Assaf Raman)
@@ -399,6 +414,7 @@ A big thanks to GitHub and all of ServiceStack's contributors:
  - [ckasabula](https://github.com/ckasabula) (Chuck Kasabula)
  - [dortzur](https://github.com/dortzur) (Dor Tzur)
  - [allenarthurgay](https://github.com/allenarthurgay) (Allen Gay)
+ - [viceberg](https://github.com/vIceBerg) 
  - [vansha](https://github.com/vansha) (Ivan Korneliuk)
  - [aaronlerch](https://github.com/aaronlerch) (Aaron Lerch)
  - [glikoz](https://github.com/glikoz)
@@ -462,6 +478,29 @@ A big thanks to GitHub and all of ServiceStack's contributors:
  - [h2oman](https://github.com/h2oman) (Jason Waterman)
  - [anewton](https://github.com/anewton) (Allen Newton)
  - [sami1971](https://github.com/sami1971)
+ - [russellchadwick](https://github.com/russellchadwick) (Russell Chadwick)
+ - [cyberzed](https://github.com/cyberzed) (Stefan Daugaard Poulsen)
+ - [filipw](https://github.com/filipw) (Filip Wojcieszyn)
+ - [ghuntley](https://github.com/ghuntley) (Geoffrey Huntley)
+ - [baramuse](https://github.com/baramuse)
+ - [pdegenhardt](https://github.com/pdegenhardt) (Phil Degenhardt)
+ - [captncraig](https://github.com/captncraig) (Craig Peterson)
+ - [abattery](https://github.com/abattery) (Jae sung Chung)
+ - [biliktamas79](https://github.com/biliktamas79)
+ - [garuma](https://github.com/garuma) (Jérémie Laval)
+ - [dsimunic](https://github.com/dsimunic)
+ - [adamfowleruk](https://github.com/adamfowleruk) (Adam Fowler)
+ - [bfriesen](https://github.com/bfriesen) (Brian Friesen)
+ - [roryf](https://github.com/roryf) (Rory Fitzpatrick)
+ - [stefandevo](https://github.com/stefandevo)
+ - [gdassac](https://github.com/gdassac)
+ - [metal10k](https://github.com/metal10k)
+ - [cmelgarejo](https://github.com/cmelgarejo)
+ - [skaman](https://github.com/skaman)
+ - [rossipedia](https://github.com/rossipedia) (Bryan J. Ross)
+ - [wimatihomer](https://github.com/wimatihomer) (Wim Pool)
+ - [sword-breaker](https://github.com/sword-breaker)
+ - [adebisi-fa](https://github.com/adebisi-fa) (Adebisi Foluso A.)
 
 ***
 

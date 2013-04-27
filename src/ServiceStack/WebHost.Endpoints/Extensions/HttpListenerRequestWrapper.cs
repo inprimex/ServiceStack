@@ -139,7 +139,10 @@ namespace ServiceStack.WebHost.Endpoints.Extensions
         {
             get
             {
-                return remoteIp ?? (remoteIp = XForwardedFor ?? (XRealIp ?? request.UserHostAddress));
+                return remoteIp ?? 
+                    (remoteIp = XForwardedFor ?? 
+                                (XRealIp ?? 
+                                ((request.RemoteEndPoint != null) ? request.RemoteEndPoint.ToString() : null)));
             }
         }
 
@@ -170,7 +173,7 @@ namespace ServiceStack.WebHost.Endpoints.Extensions
 		public string PathInfo
 		{
 			get
-			{				
+			{
 				if (this.pathInfo == null)
 				{
                     var mode = EndpointHost.Config.ServiceStackHandlerFactoryPath;
@@ -225,9 +228,10 @@ namespace ServiceStack.WebHost.Endpoints.Extensions
 			get { return request.Headers; }
 		}
 
+	    private NameValueCollection queryString;
 		public NameValueCollection QueryString
 		{
-			get { return this.request.QueryString; }
+            get { return queryString ?? (queryString = HttpUtility.ParseQueryString(request.Url.Query)); }
 		}
 
 		public NameValueCollection FormData

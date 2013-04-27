@@ -101,6 +101,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\GlobalAssemblyInfo.cs">
+      <Link>Properties\GlobalAssemblyInfo.cs</Link>
+    </Compile>
     <Compile Include="AddHeaderAttribute.cs" />
     <Compile Include="Admin\RequestLogsFeature.cs" />
     <Compile Include="ApplyTo.cs" />
@@ -213,6 +216,7 @@
     <Compile Include="RequiredPermissionAttribute.cs" />
     <Compile Include="ResponseFilterAttribute.cs" />
     <Compile Include="RoleNames.cs" />
+    <Compile Include="RouteInferenceStrategies.cs" />
     <Compile Include="Service.cs" />
     <Compile Include="ServiceExtensions.cs" />
     <Compile Include="RestServiceBase.cs" />

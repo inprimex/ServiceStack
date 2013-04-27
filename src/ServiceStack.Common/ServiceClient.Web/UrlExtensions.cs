@@ -97,7 +97,7 @@ namespace ServiceStack.ServiceClient.Web
             var restRoutes = requestType.AttributesOfType<RouteAttribute>()
                 .Select(attr => new RestRoute(requestType, attr.Path, attr.Verbs))
                 .ToList();
-#elif WINDOWS_PHONE
+#elif WINDOWS_PHONE || SILVERLIGHT
             var restRoutes = requestType.AttributesOfType<RouteAttribute>()
                 .Select(attr => new RestRoute(requestType, attr.Path, attr.Verbs))
                 .ToList();
@@ -197,15 +197,17 @@ namespace ServiceStack.ServiceClient.Web
             this.queryProperties = GetQueryProperties(type);
             foreach (var variableName in GetUrlVariables(path))
             {
-	            RouteMember propertyInfo;
-	            if (!this.queryProperties.TryGetValue(variableName, out propertyInfo))
-	            {
-		            this.AppendError("Variable '{0}' does not match any property.".Fmt(variableName));
-		            continue;
-	            }
+                var safeVarName = variableName.TrimEnd('*');
 
-				this.variablesMap[variableName] = propertyInfo;
-		        this.queryProperties.Remove(variableName);
+                RouteMember propertyInfo;
+                if (!this.queryProperties.TryGetValue(safeVarName, out propertyInfo))
+                {
+	                this.AppendError("Variable '{0}' does not match any property.".Fmt(variableName));
+	                continue;
+                }
+
+                this.queryProperties.Remove(safeVarName);
+                this.variablesMap[variableName] = propertyInfo;
             }
         }
 

@@ -93,6 +93,9 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\GlobalAssemblyInfo.cs">
+      <Link>Properties\GlobalAssemblyInfo.cs</Link>
+    </Compile>
     <Compile Include="ActionExecExtensions.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -461,6 +464,7 @@
     <Compile Include="Web\SerializationContext.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="Extensions\CustomExtensions.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\ServiceStack.Interfaces\ServiceStack.Interfaces.csproj">
